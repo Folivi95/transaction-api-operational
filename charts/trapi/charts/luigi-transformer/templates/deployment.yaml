@@ -1,0 +1,142 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "transaction-api-operational-luigi.fullname" . }}
+  labels:
+    {{- include "transaction-api-operational-luigi.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+
+  selector:
+    matchLabels:
+      {{- include "transaction-api-operational-luigi.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "transaction-api-operational-luigi.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "transaction-api-operational-luigi.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository | default .Chart.Name }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.service.health.live }}
+              port: http
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.service.health.ready }}
+              port: http
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          env:
+            - name: ENV
+              value: "{{ .Values.env.environment }}"
+            - name: SERVICE
+              value: "{{ .Values.env.service }}"
+            - name: LOG_LEVEL
+              value: "{{ .Values.env.log_level }}"
+            - name: MOCKED_DATA
+              value: "{{ .Values.env.mocked_data | default false}}"
+            - name: POSTGRES_CONNECTION
+              valueFrom:
+                secretKeyRef:
+                  name: transaction-api-operational-db-transactions
+                  key: url
+            - name: KAFKA_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: transaction-api-operational-msk-eventstreaming
+                  key: username
+            - name: KAFKA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: transaction-api-operational-msk-eventstreaming
+                  key: password
+            - name: KAFKA_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: transaction-api-operational-msk-eventstreaming
+                  key: endpoint
+            - name: KAFKA_EGRESS_TOPIC
+              value: "{{ .Values.topics.egress }}"
+            - name: KAFKA_W4_INGRESS_TOPIC
+              value: "{{ .Values.topics.w4Ingress }}"
+            - name: KAFKA_SOLAR_INGRESS_TOPIC
+              value: "{{ .Values.topics.solarIngress }}"
+            - name: KAFKA_ACNT_CONTRACT_INGRESS_TOPIC
+              value: "{{ .Values.topics.acntContractIngress }}"
+            - name: KAFKA_CLIENT_ADDRESS_INGRESS_TOPIC
+              value: "{{ .Values.topics.clientAddressIngress }}"
+            - name: KAFKA_TRANS_TYPE_INGRESS_TOPIC
+              value: "{{ .Values.topics.transTypeIngress }}"
+            - name: KAFKA_TRANS_COND_INGRESS_TOPIC
+              value: "{{ .Values.topics.transCondIngress }}"
+            - name: KAFKA_BIN_TABLE_INGRESS_TOPIC
+              value: "{{ .Values.topics.binTableIngress }}"
+            - name: LISTEN_DIM_TABLES
+              value: "{{ .Values.topics.listenDimTables }}"
+            - name: LISTEN_TRANSACTIONS
+              value: "{{ .Values.topics.listenTransactions }}"
+            - name: SCHEMA_REGISTRY_ENDPOINT
+              value: "{{ .Values.schemaRegistry.endpoint }}"
+            - name: SCHEMA_REGISTRY_REFRESH_TIME_SECONDS
+              value: "{{ .Values.schemaRegistry.refreshTimeSeconds }}"
+            - name: W4_INGRESS_SCHEMA_KEY
+              value: "{{ .Values.schemaRegistry.subjectNames.W4IngressKey }}"
+            - name: SOLAR_INGRESS_SCHEMA_KEY
+              value: "{{ .Values.schemaRegistry.subjectNames.SolarIngressKey }}"
+            - name: W4_EGRESS_SCHEMA_KEY
+              value: "{{ .Values.schemaRegistry.subjectNames.W4EgressKey }}"
+            - name: SOLAR_EGRESS_SCHEMA_KEY
+              value: "{{ .Values.schemaRegistry.subjectNames.SolarEgressKey }}"
+            - name: ACNT_CONTRACT_SCHEMA_KEY
+              value: "{{ .Values.schemaRegistry.subjectNames.AcntContractKey }}"
+            - name: BIN_TABLE_SCHEMA_KEY
+              value: "{{ .Values.schemaRegistry.subjectNames.BinTableKey }}"
+            - name: CLIENT_ADDRESS_SCHEMA_KEY
+              value: "{{ .Values.schemaRegistry.subjectNames.ClientAddressKey }}"
+            - name: TRANS_COND_SCHEMA_KEY
+              value: "{{ .Values.schemaRegistry.subjectNames.TransCondKey }}"
+            - name: TRANS_TYPE_SCHEMA_KEY
+              value: "{{ .Values.schemaRegistry.subjectNames.TransTypeKey }}"
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -1,0 +1,17 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kamek-integration-tests
+  labels:
+    app: kamek-integration-tests
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app: kamek-integration-tests
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: kamek-integration-tests
+        image: kamek-integration-tests

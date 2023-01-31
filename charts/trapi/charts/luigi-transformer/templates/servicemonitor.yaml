@@ -1,0 +1,14 @@
+{{- if .Values.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ default "transaction-api-operational-luigi" .Values.service.name }}
+spec:
+  endpoints:
+    - interval: {{ .Values.serviceMonitor.interval }}
+      port: http
+      path: /internal/metrics
+  selector:
+    matchLabels:
+      {{- include "transaction-api-operational-luigi.selectorLabels" . | nindent 6 }}
+  {{- end }}

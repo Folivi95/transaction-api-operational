@@ -1,0 +1,26 @@
+run:
+  build-tags:
+    # TODO - update to relevant tags
+    - integration
+    - unit
+    - acceptance
+
+linters-settings:
+  goimports:
+    # Separate internal packages from external
+    local-prefixes: github.com/saltpay/transaction-api-operational
+
+linters:
+  # Enable extra linters besides the default ones
+  enable:
+    - goimports
+    - godot
+    - goconst
+    - gofumpt
+    - govet
+    - stylecheck
+    - unconvert
+    - unparam
+    - misspell
+    - whitespace
+    - bodyclose

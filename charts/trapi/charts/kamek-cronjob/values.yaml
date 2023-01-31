@@ -1,0 +1,21 @@
+# Default values for transaction-api-operational.
+fullnameOverride: transaction-api-operational-kamek
+
+replicaCount: 1
+
+env:
+  environment: dev
+  service: transaction-api-operational-kamek
+  log_level: INFO
+  db_clean_interval: "'6' month"
+
+image:
+  repository:
+  tag:
+
+serviceAccount:
+  create: false
+  name: transaction-api-operational
+
+cronjob:
+  schedule: "0 4 * * *"

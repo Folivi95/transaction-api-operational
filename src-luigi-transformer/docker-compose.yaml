@@ -1,0 +1,96 @@
+version: '3.7'
+services:
+  black-box-app:
+    build:
+      context: .
+    environment:
+      - POSTGRES_CONNECTION=postgres://postgres:somePassword@postgres:5432
+      - KAFKA_ENDPOINT=kafka:9092
+      - KAFKA_USERNAME=
+      - KAFKA_PASSWORD=
+      - KAFKA_EGRESS_TOPIC=transaction-luigi-transformer-transactions-mock
+      - KAFKA_SOLAR_INGRESS_TOPIC=solar-ingress-topic
+      - KAFKA_W4_INGRESS_TOPIC=w4-ingress-topic
+      - MOCKED_DATA=true
+    expose:
+      - 8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      - kafka
+      - postgres
+    links:
+      - kafka
+      - postgres
+
+  unit-tests:
+    build:
+      context: .
+      target: deps
+    volumes:
+      - .:/build
+    command: go test -shuffle=on --tags=unit ./...
+
+  acceptance-tests:
+    build:
+      context: .
+      target: deps
+    environment:
+      - BASE_URL=http://black-box-app:8080
+      - KAFKA_ENDPOINT=kafka:9092
+      - KAFKA_USERNAME=
+      - KAFKA_PASSWORD=
+    depends_on:
+      - black-box-app
+    links:
+      - black-box-app
+    command: go test -count=1 --tags=acceptance ./...
+
+  integration-tests:
+    build:
+      context: .
+      target: deps
+    volumes:
+      - .:/build
+    depends_on:
+      - postgres
+    links:
+      - postgres
+    command: go test -count=1 --tags=integration ./...
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:6.2.0
+    hostname: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka:
+    image: confluentinc/cp-kafka:6.2.0
+    hostname: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "29092:29092"
+      - "9092:9092"
+      - "9101:9101"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://kafka:9092
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+
+  postgres:
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: somePassword
+    ports:
+      - 5432:5432
+

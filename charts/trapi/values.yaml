@@ -1,0 +1,56 @@
+# Default values for transaction-api-operational
+fullnameOverride: transaction-api-operational
+
+luigi-transformer:
+  enabled: true
+  env:
+    environment: prd
+    service: transaction-api-operational-luigi
+    log_level: INFO
+    AUD: transaction-api-operational
+    ISS: https://identity.cloud.saltpay.dev/oauth/v2/oauth-anonymous
+    JWKS: https://identity.cloud.saltpay.dev/oauth/v2/oauth-anonymous/jwks
+
+  topics:
+    w4Ingress: transaction-api-operational-ogg-way4-curated-doc
+    solarIngress: transaction-api-operational-connect-solar-curated-afterProcessTxn
+    acntContractIngress: transaction-api-operational-ogg-way4-raw-acnt_contract
+    clientAddressIngress: transaction-api-operational-ogg-way4-raw-client_address
+    transTypeIngress: transaction-api-operational-ogg-way4-raw-trans_type
+    transCondIngress: transaction-api-operational-ogg-way4-raw-trans_cond
+    binTableIngress: transaction-api-operational-ogg-way4-raw-bin_table
+    egress: transaction-api-operational-transactions
+    listenDimTables: false
+    listenTransactions: false
+  
+  schemaRegistry:
+    endpoint: http://arch-artifacts-schemaregistry:8082
+    refreshTimeSeconds: 10
+    subjectNames:
+      W4IngressKey: env-way4_curated_transaction-v1
+      W4EgressKey: ent-acquiring_transaction-v6
+      SolarIngressKey:
+      SolarEgressKey:
+      AcntContractKey: env-way4_acnt_contract_record-v1
+      BinTableKey: env-way4_bin_table_record-v1
+      ClientAddressKey: env-way4_client_address_record-v1
+      TransCondKey: env-way4_trans_cond_record-v1
+      TransTypeKey: env-way4_trans_type_record-v1
+
+mario-api:
+  enabled: false
+  env:
+    environment: prd
+    service: transaction-api-operational-mario
+    log_level: INFO
+
+  topics:
+    ingress: ~
+    egress: transaction-api-operational-transactions
+
+  postgres:
+    mockedData: false
+
+kamek-cronjob:
+  enabled: false
+

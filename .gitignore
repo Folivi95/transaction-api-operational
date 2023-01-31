@@ -1,0 +1,19 @@
+# macos
+.DS_Store
+# coverage output
+*.out
+# vendor deps
+vendor/
+# IntelliJ
+.idea
+# Visual Studio Code
+.vscode
+.ssh
+.helm
+tilt_modules/
+*/vendor/
+
+local/
+!charts/local/
+.tilt_sources/
+**/mario-api

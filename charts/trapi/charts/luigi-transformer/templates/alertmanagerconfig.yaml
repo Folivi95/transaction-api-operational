@@ -1,0 +1,20 @@
+{{- if .Values.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: AlertmanagerConfig
+metadata:
+  name: {{ include "transaction-api-operational-luigi.fullname" . }}
+spec:
+  receivers:
+    - name: slack
+      slackConfigs:
+        - apiURL:
+            name: transaction-api-operational-slack-app
+            key: slack_url
+  route:
+    groupBy:
+      - alertname
+    matchers:
+      - name: tki
+        value: {{ include "transaction-api-operational-luigi.fullname" . }}
+    receiver: slack
+{{- end }}

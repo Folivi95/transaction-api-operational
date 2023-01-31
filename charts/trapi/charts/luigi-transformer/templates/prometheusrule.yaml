@@ -1,0 +1,21 @@
+{{- if .Values.serviceMonitor.enabled -}}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "transaction-api-operational-luigi.fullname" . }}
+  namespace: "acquiring-host"
+spec:
+  groups:
+    - name: {{ include "transaction-api-operational-luigi.fullname" . }}
+      rules:
+        - alert: TransactionApiOperationalLuigiHandlerErrorLogsFound
+          annotations:
+            message: >-
+              Error found on log stream
+          expr: |
+            sum by (service, namespace) (increase(error_log_entries {container="luigi-transformer"}[2m])) > {{ .Values.alerts.AnyError.threshold }}
+          labels:
+            tki: {{ include "transaction-api-operational-luigi.fullname" . }}
+            team: acquiring
+            severity: error
+{{- end }}

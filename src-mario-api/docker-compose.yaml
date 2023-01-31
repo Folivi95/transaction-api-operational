@@ -1,0 +1,136 @@
+version: '3.7'
+services:
+  black-box-app:
+    build:
+      context: .
+    environment:
+      - POSTGRES_CONNECTION=postgres://postgres:somePassword@postgres:5432
+      - KAFKA_ENDPOINT=kafka:9092
+      - KAFKA_USERNAME=
+      - KAFKA_PASSWORD=
+      - KAFKA_TRANSACTION_TOPIC=transaction-topic
+      - KAFKA_TRANSACTION_SCHEMA=ent-canonical_transaction-v2
+    expose:
+      - 8080
+    ports:
+      - "8080:8080"
+    links:
+      - postgres
+      - kafka
+
+  black-box-app-mock:
+    build:
+      context: .
+    environment:
+      - POSTGRES_CONNECTION=postgres://postgres:somePassword@postgres:5432
+      - MOCKED_DATA=true
+      - KAFKA_ENDPOINT=kafka:9092
+      - KAFKA_USERNAME=
+      - KAFKA_PASSWORD=
+      - KAFKA_TRANSACTION_TOPIC=transaction-topic
+      - KAFKA_TRANSACTION_SCHEMA=ent-canonical_transaction-v2
+    expose:
+      - 8090
+    ports:
+      - "8090:8080"
+    links:
+      - postgres
+      - kafka
+
+  kafka:
+    image: confluentinc/cp-kafka:6.2.0
+    hostname: kafka
+    logging:
+      driver: none
+    depends_on:
+      - zookeeper
+    ports:
+      - "29092:29092"
+      - "9092:9092"
+      - "9101:9101"
+    healthcheck:
+      test: ["CMD", "/bin/kafka-topics", "--list", "--bootstrap-server", "host.docker.internal:9092"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://kafka:9092
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:6.2.0
+    hostname: zookeeper
+    logging:
+      driver: none
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+#  unit-tests:
+#    build:
+#      context: .
+#      target: deps
+#    volumes:
+#      - .:/build
+#    command: go test -shuffle=on --tags=unit ./...
+
+  acceptance-tests:
+    build:
+      context: .
+      target: deps
+    environment:
+      - BASE_URL=http://black-box-app:8080
+      - KAFKA_ENDPOINT=kafka:9092
+      - KAFKA_USERNAME=
+      - KAFKA_PASSWORD=
+    depends_on:
+      - black-box-app
+    links:
+      - black-box-app
+    command: go test -count=1 --tags=acceptance ./...
+
+  acceptance-mock-tests:
+    build:
+      context: .
+      target: deps
+    environment:
+      - BASE_URL=http://black-box-app-mock:8080
+      - KAFKA_ENDPOINT=kafka:9092
+      - KAFKA_USERNAME=
+      - KAFKA_PASSWORD=
+    depends_on:
+      - black-box-app-mock
+    links:
+      - black-box-app-mock
+    command: go test -count=1 --tags=acceptance_mock ./...
+#
+#  integration-tests:
+#    build:
+#      context: .
+#      target: deps
+#    volumes:
+#      - .:/build
+#    depends_on:
+#      - postgres
+#    links:
+#      - postgres
+#    command: go test -count=1 --tags=integration ./...
+
+  postgres:
+    image: postgres
+    logging:
+      driver: none
+    environment:
+      POSTGRES_PASSWORD: somePassword
+    ports:
+      - 5432:5432
+    expose:
+     - 5432

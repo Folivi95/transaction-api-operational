@@ -1,0 +1,291 @@
+kafka:
+  - cluster: "eventstreaming"
+    overrides:
+      - scope: "platform"
+        environment: "dev"
+        topics:
+          - name: "transactions-v2"
+            partitions: 3
+            replication_factor: 3
+            producers:
+              - name: "transaction-api-operational"
+                scope: "platform"
+            consumers:
+              - name: "saltdata-platform-kowl"
+                scope: "platform"
+              - name: "transaction-api-operational-mario"
+                scope: "platform"
+          - name: "transactions-v4"
+            partitions: 3
+            replication_factor: 3
+            producers:
+              - name: "transaction-api-operational"
+                scope: "platform"
+            consumers:
+              - name: "saltdata-platform-kowl"
+                scope: "platform"
+              - name: "transaction-api-operational-mario"
+                scope: "platform"
+              - name: "yoyo-gmd-integration"
+                scope: "platform"
+          - name: "transactions-mock"
+            partitions: 3
+            replication_factor: 3
+            consumers:
+              - name: "saltdata-platform-kowl"
+                scope: "platform"
+              - name: "yoyo-gmd-integration"
+                scope: "platform"
+            producers:
+              - name: "transaction-api-operational"
+                scope: "platform"
+          - name: "ogg-way4-raw-trans_type" # Name: transaction-api-operational-ogg-way4-raw-trans_type
+            partitions: 3
+            replication_factor: 3
+            retention_ms: 604800000 # 7 days
+            retention_bytes: -1 # No limit
+            consumers:
+              - name: "saltdata-platform-kowl"
+                scope: "platform"
+              - name: "transaction-api-operational"
+                scope: "platform"
+            producers:
+              - name: "goldengate"
+                external: true
+          - name: "ogg-way4-raw-acnt_contract" # Name: transaction-api-operational-ogg-way4-raw-acnt_contract
+            partitions: 3
+            replication_factor: 3
+            retention_ms: 604800000 # 7 days
+            retention_bytes: -1 # No limit
+            consumers:
+              - name: "saltdata-platform-kowl"
+                scope: "platform"
+              - name: "transaction-api-operational"
+                scope: "platform"
+            producers:
+              - name: "goldengate"
+                external: true
+          - name: "ogg-way4-raw-client_address" # Name: transaction-api-operational-ogg-way4-raw-client_address
+            partitions: 3
+            replication_factor: 3
+            retention_ms: 604800000 # 7 days
+            retention_bytes: -1 # No limit
+            consumers:
+              - name: "saltdata-platform-kowl"
+                scope: "platform"
+              - name: "transaction-api-operational"
+                scope: "platform"
+            producers:
+              - name: "goldengate"
+                external: true
+          - name: "ogg-way4-raw-trans_cond" # Name: transaction-api-operational-ogg-way4-raw-trans_cond
+            partitions: 3
+            replication_factor: 3
+            retention_ms: 604800000 # 7 days
+            retention_bytes: -1 # No limit
+            consumers:
+              - name: "saltdata-platform-kowl"
+                scope: "platform"
+              - name: "transaction-api-operational"
+                scope: "platform"
+            producers:
+              - name: "goldengate"
+                external: true
+          - name: "ogg-way4-raw-bin_table" # Name: transaction-api-operational-ogg-way4-raw-bin_table
+            partitions: 3
+            replication_factor: 3
+            retention_ms: 604800000 # 7 days
+            retention_bytes: -1 # No limit
+            consumers:
+              - name: "saltdata-platform-kowl"
+                scope: "platform"
+              - name: "transaction-api-operational"
+                scope: "platform"
+            producers:
+              - name: "goldengate"
+                external: true
+          - name: "ogg-way4-curated-doc" # Name: transaction-api-operational-ogg-way4-curated-doc
+            partitions: 3
+            replication_factor: 3
+            retention_ms: 604800000 # 7 days
+            retention_bytes: -1 # No limit
+            consumers:
+              - name: "saltdata-platform-kowl"
+                scope: "platform"
+              - name: "transaction-api-operational"
+                scope: "platform"
+              - name: "saltdata-kafka-connect"
+                scope: "platform"
+            producers:
+              - name: "transaction-card-validator"
+                scope: "cde"
+          - name: "connect-solar-curated-afterProcessTxn" # Name: transaction-api-operational-connect-solar-curated-afterProcessTxn
+            partitions: 3
+            replication_factor: 3
+            retention_ms: 604800000 # 7 days
+            retention_bytes: -1 # No limit
+            consumers:
+              - name: "saltdata-platform-kowl"
+                scope: "platform"
+              - name: "transaction-api-operational"
+                scope: "platform"
+              - name: "saltdata-kafka-connect"
+                scope: "platform"
+            producers:
+              - name: "transaction-card-validator"
+                scope: "cde"
+          - name: "transactions" # Name: transaction-api-operational-transactions
+            partitions: 3
+            replication_factor: 3
+            retention_ms: 604800000 # 7 days
+            retention_bytes: -1 # No limit
+            consumers:
+              - name: "saltdata-platform-kowl"
+                scope: "platform"
+              - name: "saltdata-kafka-connect"
+                scope: "platform"
+              - name: "yoyo-gmd-integration"
+                scope: "platform"
+            producers:
+              - name: "transaction-api-operational"
+                scope: "platform"
+      - scope: "platform"
+        environment: "prd"
+        topics:
+          - name: "transactions-v2"
+            partitions: 3
+            replication_factor: 3
+            producers:
+              - name: "transaction-api-operational"
+                scope: "platform"
+            consumers:
+              - name: "saltdata-platform-kowl"
+                scope: "platform"
+              - name: "transaction-api-operational-mario"
+                scope: "platform"
+          - name: "transactions-v4"
+            partitions: 3
+            replication_factor: 3
+            producers:
+              - name: "transaction-api-operational"
+                scope: "platform"
+            consumers:
+              - name: "saltdata-platform-kowl"
+                scope: "platform"
+              - name: "transaction-api-operational-mario"
+                scope: "platform"
+              - name: "yoyo-gmd-integration"
+                scope: "platform"
+          - name: "transactions-mock"
+            partitions: 3
+            replication_factor: 3
+            producers:
+              - name: "transaction-api-operational"
+                scope: "platform"
+          - name: "ogg-way4-raw-trans_type" # Name: transaction-api-operational-ogg-way4-raw-trans_type
+            partitions: 3
+            replication_factor: 3
+            retention_ms: 604800000 # 7 days
+            retention_bytes: -1 # No limit
+            consumers:
+              - name: "transaction-api-operational"
+                scope: "platform"
+            producers:
+              - name: "goldengate"
+                external: true
+          - name: "ogg-way4-raw-acnt_contract" # Name: transaction-api-operational-ogg-way4-raw-acnt_contract
+            partitions: 3
+            replication_factor: 3
+            retention_ms: 604800000 # 7 days
+            retention_bytes: -1 # No limit
+            consumers:
+              - name: "transaction-api-operational"
+                scope: "platform"
+            producers:
+              - name: "goldengate"
+                external: true
+          - name: "ogg-way4-raw-client_address" # Name: transaction-api-operational-ogg-way4-raw-client_address
+            partitions: 3
+            replication_factor: 3
+            retention_ms: 604800000 # 7 days
+            retention_bytes: -1 # No limit
+            consumers:
+              - name: "transaction-api-operational"
+                scope: "platform"
+            producers:
+              - name: "goldengate"
+                external: true
+          - name: "ogg-way4-raw-trans_cond" # Name: transaction-api-operational-ogg-way4-raw-trans_cond
+            partitions: 3
+            replication_factor: 3
+            retention_ms: 604800000 # 7 days
+            retention_bytes: -1 # No limit
+            consumers:
+              - name: "transaction-api-operational"
+                scope: "platform"
+            producers:
+              - name: "goldengate"
+                external: true
+          - name: "ogg-way4-raw-bin_table" # Name: transaction-api-operational-ogg-way4-raw-bin_table
+            partitions: 3
+            replication_factor: 3
+            retention_ms: 604800000 # 7 days
+            retention_bytes: -1 # No limit
+            consumers:
+              - name: "transaction-api-operational"
+                scope: "platform"
+            producers:
+              - name: "goldengate"
+                external: true
+          - name: "ogg-way4-curated-doc" # Name: transaction-api-operational-ogg-way4-curated-doc
+            partitions: 3
+            replication_factor: 3
+            retention_ms: 604800000 # 7 days
+            retention_bytes: -1 # No limit
+            consumers:
+              - name: "transaction-api-operational"
+                scope: "platform"
+              - name: "saltdata-kafka-connect"
+                scope: "platform"
+            producers:
+              - name: "transaction-card-validator"
+                scope: "cde"
+          - name: "connect-solar-curated-afterProcessTxn" # Name: transaction-api-operational-connect-solar-curated-afterProcessTxn
+            partitions: 3
+            replication_factor: 3
+            retention_ms: 604800000 # 7 days
+            retention_bytes: -1 # No limit
+            consumers:
+              - name: "transaction-api-operational"
+                scope: "platform"
+              - name: "saltdata-kafka-connect"
+                scope: "platform"
+            producers:
+              - name: "transaction-card-validator"
+                scope: "cde"
+          - name: "transactions" # Name: transaction-api-operational-transactions
+            partitions: 3
+            replication_factor: 3
+            retention_ms: 604800000 # 7 days
+            retention_bytes: -1 # No limit
+            consumers:
+              - name: "saltdata-kafka-connect"
+                scope: "platform"
+              - name: "yoyo-gmd-integration"
+                scope: "platform"
+            producers:
+              - name: "transaction-api-operational"
+                scope: "platform"
+
+databases:
+  - name: "transactions"
+    database_type: "aurora-postgresql"
+    database_version: "12.8"
+    main_user: "tapi"
+    instance_type: "db.t3.medium"
+    instance_count: 1
+    overrides:
+      - scope: "platform"
+        environment: "prd"
+        instance_count: 2
+        instance_type: "db.r5.large"

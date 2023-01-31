@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "transaction-api-operational-kamek.fullname" . }}
+  labels:
+    {{- include "transaction-api-operational-kamek.labels" . | nindent 4 }}
+spec:
+  schedule: "{{ .Values.cronjob.schedule }}"
+  failedJobsHistoryLimit: 0
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: {{ include "transaction-api-operational-kamek.serviceAccountName" . }}
+          containers:
+          - name: {{ .Chart.Name }}
+            image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+            imagePullPolicy: IfNotPresent
+            {{- if .Values.env }}
+            env:
+            - name: ENV
+              value: "{{ .Values.env.environment }}"
+            - name: LOG_LEVEL
+              value: "{{ .Values.env.log_level }}"
+            - name: POSTGRES_URL
+              valueFrom:
+                secretKeyRef:
+                  name: transaction-api-operational-db-transactions
+                  key: url
+            - name: DB_CLEAN_INTERVAL
+              value: "{{ .Values.env.db_clean_interval }}"
+            {{- end }}
+          restartPolicy: OnFailure

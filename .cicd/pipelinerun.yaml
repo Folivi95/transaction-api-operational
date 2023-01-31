@@ -1,0 +1,343 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: transaction-api-operational
+  labels:
+    team: acquiring
+spec:
+  serviceAccountNames:
+    - taskName: push
+      serviceAccountName: cicd
+    - taskName: push-helm-chart
+      serviceAccountName: cicd
+  workspaces:
+    - name: workspace
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 2Gi
+  pipelineSpec:
+    workspaces:
+      - name: workspace
+    tasks:
+      # Clone the source repo
+      - name: git-clone
+        taskRef:
+          name: git-clone
+          kind: ClusterTask
+        params:
+          - name: url
+            value: $(params.gitrepositoryurl)
+          - name: subdirectory
+            value: src
+          - name: revision
+            value: $(params.headsha)
+        workspaces:
+          - name: output
+            workspace: workspace
+      # runs linting against the service
+      # - name: linting
+      #   runAfter:
+      #     - git-clone
+      #   workspaces:
+      #     - name: shared
+      #       workspace: workspace
+      #   taskSpec:
+      #     workspaces:
+      #       - name: shared
+      #     steps:
+      #       - name: linting
+      #         image: 011034701064.dkr.ecr.eu-west-1.amazonaws.com/infra-cicd-images:go-golanci-lint-latest
+      #         env:
+      #           - name: GOPATH
+      #             value: $(workspaces.shared.path)/go
+      #         script: |
+      #           mkdir -p ${GOPATH}
+      #           cd $(workspaces.shared.path)/src
+      #           golangci-lint run --timeout=5m
+      # - name: integration-tests
+      #   runAfter:
+      #     - git-clone
+      #   workspaces:
+      #     - name: shared
+      #       workspace: workspace
+      #   taskSpec:
+      #     workspaces:
+      #       - name: shared
+      #     steps:
+      #       - name: integration-tests
+      #         image: golang
+      #         env:
+      #           - name: GOPATH
+      #             value: $(workspaces.shared.path)/go
+      #         script: |
+      #           mkdir -p ${GOPATH}
+      #           cd $(workspaces.shared.path)/src
+      #           go test -count=1 --tags=integration ./...
+      - name: add-vendor-mario
+        runAfter:
+          - git-clone
+        workspaces:
+          - name: shared
+            workspace: workspace
+        taskSpec:
+          workspaces:
+            - name: shared
+          steps:
+            - name: vendor
+              image: public.ecr.aws/docker/library/golang
+              env:
+                - name: GOPATH
+                  value: $(workspaces.shared.path)/src/sr-mario-api/go
+              script: |
+                mkdir -p ${GOPATH}
+                cd $(workspaces.shared.path)/src/src-mario-api
+                go mod vendor
+      # runs unit tests
+      - name: unit-tests-mario
+        runAfter:
+          - git-clone
+          - add-vendor-mario
+        workspaces:
+          - name: shared
+            workspace: workspace
+        taskSpec:
+          workspaces:
+            - name: shared
+          steps:
+            - name: unit-tests
+              image: public.ecr.aws/docker/library/golang
+              env:
+                - name: GOPATH
+                  value: $(workspaces.shared.path)/src/src-mario-api/go/
+              script: |
+                mkdir -p ${GOPATH}
+                cd $(workspaces.shared.path)/src/src-mario-api
+                go test -shuffle=on --tags=unit ./...
+      - name: build-push-image-mario
+        taskRef:
+          name: build-push-image-v2
+          kind: ClusterTask
+        runAfter:
+          - unit-tests-mario
+          - add-vendor-mario
+        workspaces:
+          - name: shared
+            workspace: workspace
+        params:
+          - name: imagename
+            value: transaction-api-operational
+          - name: tags
+            value:
+              - mario-$(params.headsha)
+              - mario-$(params.headref)
+          - name: contextpath
+            value: $(workspaces.shared.path)/src/src-mario-api
+      - name: add-vendor-luigi
+        runAfter:
+          - git-clone
+        workspaces:
+          - name: shared
+            workspace: workspace
+        taskSpec:
+          workspaces:
+            - name: shared
+          steps:
+            - name: vendor
+              image: public.ecr.aws/docker/library/golang
+              env:
+                - name: GOPATH
+                  value: $(workspaces.shared.path)/go
+              script: |
+                mkdir -p ${GOPATH}
+                cd $(workspaces.shared.path)/src/src-luigi-transformer
+                go mod vendor
+      # runs unit tests
+      - name: unit-tests-luigi
+        runAfter:
+          - git-clone
+          - add-vendor-luigi
+        workspaces:
+          - name: shared
+            workspace: workspace
+        taskSpec:
+          workspaces:
+            - name: shared
+          steps:
+            - name: unit-tests
+              image: public.ecr.aws/docker/library/golang
+              env:
+                - name: GOPATH
+                  value: $(workspaces.shared.path)/src/src-luigi-transformer/go/
+              script: |
+                mkdir -p ${GOPATH}
+                cd $(workspaces.shared.path)/src/src-luigi-transformer
+                go test -shuffle=on --tags=unit ./...
+      - name: build-push-image-luigi
+        taskRef:
+          name: build-push-image-v2
+          kind: ClusterTask
+        runAfter:
+          - unit-tests-luigi
+          - add-vendor-luigi
+        workspaces:
+          - name: shared
+            workspace: workspace
+        params:
+          - name: imagename
+            value: transaction-api-operational
+          - name: tags
+            value:
+              - luigi-$(params.headsha)
+              - luigi-$(params.headref)
+          - name: contextpath
+            value: $(workspaces.shared.path)/src/src-luigi-transformer
+      - name: add-vendor-kamek
+        runAfter:
+          - git-clone
+        workspaces:
+          - name: shared
+            workspace: workspace
+        taskSpec:
+          workspaces:
+            - name: shared
+          steps:
+            - name: vendor
+              image: public.ecr.aws/docker/library/golang
+              env:
+                - name: GOPATH
+                  value: $(workspaces.shared.path)/go
+              script: |
+                mkdir -p ${GOPATH}
+                cd $(workspaces.shared.path)/src/src-kamek-cronjob
+                go mod vendor
+      # runs unit tests
+      - name: unit-tests-kamek
+        runAfter:
+          - git-clone
+          - add-vendor-kamek
+        workspaces:
+          - name: shared
+            workspace: workspace
+        taskSpec:
+          workspaces:
+            - name: shared
+          steps:
+            - name: unit-tests
+              image: public.ecr.aws/docker/library/golang
+              env:
+                - name: GOPATH
+                  value: $(workspaces.shared.path)/src/src-kamek-cronjob/go/
+              script: |
+                mkdir -p ${GOPATH}
+                cd $(workspaces.shared.path)/src/src-kamek-cronjob
+                go test -shuffle=on --tags=unit ./...
+      - name: build-push-image-kamek
+        taskRef:
+          name: build-push-image-v2
+          kind: ClusterTask
+        runAfter:
+          - unit-tests-kamek
+          - add-vendor-kamek
+        workspaces:
+          - name: shared
+            workspace: workspace
+        params:
+          - name: imagename
+            value: transaction-api-operational
+          - name: tags
+            value:
+              - kamek-$(params.headsha)
+              - kamek-$(params.headref)
+          - name: contextpath
+            value: $(workspaces.shared.path)/src/src-kamek-cronjob
+      # runs the acceptance-tests against the image built on the previous step
+#      - name: acceptance-tests
+        #runAfter:
+          #- push
+        #workspaces:
+          #- name: shared
+#            workspace: workspace
+        #params:
+          ## get the image ref from the previous set so that we can run the tests against it
+          #- name: imageDigest
+            #value: "$(tasks.push.results.IMAGE-DIGEST)"
+        #taskSpec:
+          #workspaces:
+            #- name: shared
+          #params:
+            #- name: imageDigest
+          #steps:
+            #- name: acceptance-tests
+              #image: golang
+              #env:
+                #- name: GOPATH
+                  #value: $(workspaces.shared.path)/go
+                #- name: BASE_URL
+                  #value: http://localhost:8080
+              #script: |
+                #mkdir -p ${GOPATH}
+                #cd $(workspaces.shared.path)/src
+                #go test -count=1 --tags=acceptance ./...
+          #sidecars:
+            ## mounts the image built on the previous step as a sidecar to allow the tests to run against it
+            #- image: 011034701064.dkr.ecr.eu-west-1.amazonaws.com/transaction-api-operational@$(params.imageDigest)
+              #name: transaction-api-operational
+                ## allows waiting for the service to come up before marking the sidecar as ready
+              #livenessProbe:
+                #failureThreshold: 10
+                #httpGet:
+                  #path: /internal/health_check
+                  #port: 8080
+                  #scheme: HTTP
+                  #initialDelaySeconds: 5
+                  #periodSeconds: 10
+                  #successThreshold: 1
+                  #timeoutSeconds: 1
+      # Package and push Helm chart
+      - name: push-helm-chart
+        runAfter:
+          - git-clone
+        taskRef:
+          name: helm-generate-and-push
+          kind: ClusterTask
+        workspaces:
+          - name: shared
+            workspace: workspace
+        params:
+          - name: chart-name
+            value: transaction-api-operational
+          - name: chart-version
+            value: '0.4.95'
+          - name: push
+            value: $(params.merged)
+          - name: chart-location
+            value: src/charts/trapi/
+          - name: lint
+            value: 'true'
+      - name: deploy
+        runAfter:
+          - push-helm-chart
+          - build-push-image-mario
+          - build-push-image-luigi
+          - build-push-image-kamek
+        when:
+          - input: $(params.headref)
+            operator: in
+            values: ["master"]
+        taskRef:
+          name: deploy-app
+          kind: ClusterTask
+        params:
+          - name: tagname
+            value: $(params.headsha)
+          - name: git-clone-url
+            value: $(params.gitrepositoryurl)
+          - name: release-target
+            value: $(params.headsha)
+          # TODO: When we have multiple envs we probably want to enable this.
+          - name: rolling-deploy
+            value: "false"

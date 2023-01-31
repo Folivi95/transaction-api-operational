@@ -1,0 +1,157 @@
+helm:
+  chart: transaction-api-operational
+  version: 0.4.95
+  values: |
+    mario-api:
+      enabled: false
+      image:
+        {{- with .ContainerImages.GetContainerImageByProvenance "build-push-image-mario" }}
+        repository: {{ .Registry }}
+        tag: {{ index .Tags 0 }}@{{ .Digest }}
+        {{- end }}
+
+      env:
+        environment: {{ .Environment }}
+        service: transaction-api-operational-mario
+        log_level: INFO
+        AUD: transaction-api-operational
+        ISS: https://identity.cloud.saltpay.dev/oauth/v2/oauth-anonymous
+        JWKS: https://identity.cloud.saltpay.dev/oauth/v2/oauth-anonymous/jwks
+        
+      subjectNames:
+        transactionIngressKey: ent-acquiring_transaction-v6
+        
+      schemaRegistry:
+        endpoint: https://arch-artifacts-schemaregistry.{{ .Scope }}-{{ .Environment }}.{{ .Region }}.salt
+        refreshTimeSeconds: 300
+    
+      topics:
+        ingress: transaction-api-operational-transactions-v4
+
+      topics:
+        ingress: transaction-api-operational-transactions-v4
+
+    luigi-transformer:
+      enabled: true
+      image:
+        {{- with .ContainerImages.GetContainerImageByProvenance "build-push-image-luigi" }}
+        repository: {{ .Registry }}
+        tag: {{ index .Tags 0 }}@{{ .Digest }}
+        {{- end }}
+
+      env:
+        environment: {{ .Environment }}
+        service: transaction-api-operational-luigi
+        log_level: INFO
+
+      topics:
+        w4Ingress: transaction-api-operational-ogg-way4-curated-doc
+        solarIngress: transaction-api-operational-connect-solar-curated-afterProcessTxn
+        acntContractIngress: transaction-api-operational-ogg-way4-raw-acnt_contract
+        clientAddressIngress: transaction-api-operational-ogg-way4-raw-client_address
+        transTypeIngress: transaction-api-operational-ogg-way4-raw-trans_type
+        transCondIngress: transaction-api-operational-ogg-way4-raw-trans_cond
+        egress: transaction-api-operational-transactions-v4
+      
+      subjectNames:
+        W4IngressKey: env-way4_curated_transaction-v1
+        W4EgressKey: ent-acquiring_transaction-v6
+        SolarIngressKey:
+        SolarEgressKey:
+        AcntContractKey: env-way4_acnt_contract_record-v1
+        BinTableKey: env-way4_bin_table_record-v1
+        ClientAddressKey: env-way4_client_address_record-v1
+        TransCondKey: env-way4_trans_cond_record-v1
+        TransTypeKey: env-way4_trans_type_record-v1
+
+      schemaRegistry:
+        endpoint: https://arch-artifacts-schemaregistry.{{ .Scope }}-{{ .Environment }}.{{ .Region }}.salt
+        refreshTimeSeconds: 300
+        subjectNames:
+          W4Key: env-way4_curated_transaction-v1
+          SolarKey:
+          AcntContractKey: env-way4_acnt_contract_record-v1
+          BinTableKey: env-way4_bin_table_record-v1
+          ClientAddressKey: env-way4_client_address_record-v1
+          TransCondKey: env-way4_trans_cond_record-v1
+          TransTypeKey: env-way4_trans_type_record-v1
+
+    kamek-cronjob:
+      enabled: false
+      env:
+        environment: {{ .Environment }}
+      image:
+        {{- with .ContainerImages.GetContainerImageByProvenance "build-push-image-kamek" }}
+        repository: {{ .Registry }}
+        tag: {{ index .Tags 0 }}@{{ .Digest }}
+        {{- end }}
+
+  overrides:
+    - region: eu-west-1
+      scope: platform
+      environment: dev
+      values: |
+        kamek-cronjob:
+          cronjob:
+            schedule: "*/10 * * * *"
+          env:
+            db_clean_interval: 60
+
+        luigi-transformer:
+          topics:
+            listenDimTables: false
+            listenTransactions: true
+
+        mario-api:
+          enabled: true
+          postgres:
+            mockedData: true
+
+    - region: eu-west-1
+      scope: platform
+      environment: prd
+      values: |
+        kamek-cronjob:
+          env:
+            db_clean_interval: 180
+
+        luigi-transformer:
+          env:
+            log_level: WARN
+
+          replicaCount: 3
+          topics:
+            listenDimTables: false
+            listenTransactions: true
+
+          autoscaling:
+            enabled: true
+            minReplicas: 3
+            maxReplicas: 3
+            targetCPUUtilizationPercentage: 80
+
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1024Mi
+            requests:
+              cpu: 500m
+              memory: 512Mi
+
+        mario-api:
+          env:
+            log_level: WARN
+            AUD: transaction-api-operational
+            ISS: https://identity.cloud.saltpay.co/oauth/v2/oauth-anonymous
+            JWKS: https://identity.cloud.saltpay.co/oauth/v2/oauth-anonymous/jwks
+
+          replicaCount: 3
+
+          autoscaling:
+            enabled: true
+            minReplicas: 3
+            maxReplicas: 10
+            targetCPUUtilizationPercentage: 80
+
+          postgres:
+            mockedData: false

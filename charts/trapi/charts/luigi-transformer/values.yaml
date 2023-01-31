@@ -1,0 +1,102 @@
+# Default values for transaction-api-operational-luigi.
+fullnameOverride: transaction-api-operational-luigi
+
+replicaCount: 1
+
+env:
+  environment: dev
+  service: transaction-api-operational-luigi
+  log_level: INFO
+
+image:
+  repository:
+  tag:
+
+serviceAccount:
+  create: false
+  name: transaction-api-operational
+
+service:
+  type: ClusterIP
+  port: 8080
+  health:
+    live: /internal/health_check
+    ready: /internal/health_check
+
+serviceMonitor:
+  enabled: true
+  interval: 30s
+
+ingress: {}
+
+hpa: {}
+
+resources:
+  limits:
+    cpu: 1
+    memory: 256Mi
+  requests:
+    cpu: 1
+    memory: 256Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 15
+  targetCPUUtilizationPercentage: 80
+
+pdb:
+  enabled: true
+  maxUnavailable: 1
+
+topics:
+  w4Ingress: transaction-api-operational-ogg-way4-curated-doc
+  solarIngress: transaction-api-operational-connect-solar-curated-afterProcessTxn
+  acntContractIngress: transaction-api-operational-ogg-way4-raw-acnt_contract
+  clientAddressIngress: transaction-api-operational-ogg-way4-raw-client_address
+  transTypeIngress: transaction-api-operational-ogg-way4-raw-trans_type
+  transCondIngress: transaction-api-operational-ogg-way4-raw-trans_cond
+  egress: transaction-api-operational-transactions
+
+deployment:
+  local: false
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - luigi-transformer
+          topologyKey: topology.kubernetes.io/zone
+        weight: 100
+      - podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - luigi-transformer
+          topologyKey: kubernetes.io/hostname
+        weight: 90
+
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: topology.kubernetes.io/zone
+    whenUnsatisfiable: ScheduleAnyway
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/name: luigi-transformer
+  - maxSkew: 1
+    topologyKey: kubernetes.io/hostname
+    whenUnsatisfiable: ScheduleAnyway
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/name: luigi-transformer
+
+alerts:
+  AnyError:
+    threshold: 0

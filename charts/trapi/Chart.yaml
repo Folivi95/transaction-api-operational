@@ -1,0 +1,21 @@
+apiVersion: v2
+name: transaction-api-operational
+description: Main chart for the Transaction API project
+
+type: application
+
+version: 0.1.1
+
+appVersion: "0.1.0"
+
+dependencies:
+  - name: mario-api
+    version: 0.1.1
+    condition: mario-api.enabled
+  - name: luigi-transformer
+    version: 0.1.1
+    condition: luigi-transformer.enabled
+  - name: kamek-cronjob
+    version: 0.1.1
+    condition: kamek-cronjob.enabled
+

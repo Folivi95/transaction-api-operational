@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "transaction-api-operational-luigi.fullname" . }}
+  labels:
+    {{- include "transaction-api-operational-luigi.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "transaction-api-operational-luigi.selectorLabels" . | nindent 4 }}

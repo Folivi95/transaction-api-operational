@@ -1,0 +1,9 @@
+github.com/Masterminds/semver v1.5.0 h1:H65muMkzWKEuNDnfl9d70GUjFniHKHRbFPGBuZ3QEww=
+github.com/saltpay/go-utils v0.2.0 h1:rUnlp+ehBj4gnTyzlyxD3vUO6fbaUrSp4RyLW8+bN8o=
+github.com/saltpay/go-utils v0.2.0/go.mod h1:NZ1Zf5hySzwBvTFmQOVTie4K1s9O5+fsfgmpl2Pe+Ac=
+github.com/saltpay/go-utils v0.2.1 h1:fo4IsemPZnwy8RaIwZKSLtJ7fzKgzGMubraE4b7EXII=
+github.com/saltpay/go-utils v0.2.1/go.mod h1:NZ1Zf5hySzwBvTFmQOVTie4K1s9O5+fsfgmpl2Pe+Ac=
+github.com/saltpay/go-utils v0.2.2 h1:+Jw9dZkDJEgTjAIEiy8Rpsw5FEILqmCu36dchVa+b8c=
+github.com/saltpay/go-utils v0.2.2/go.mod h1:NZ1Zf5hySzwBvTFmQOVTie4K1s9O5+fsfgmpl2Pe+Ac=
+github.com/saltpay/go-utils v0.2.3 h1:T2uUkGopu/a3165fB5BmFeF8i68e1hp/042+OGNdxWs=
+github.com/saltpay/go-utils v0.2.3/go.mod h1:NZ1Zf5hySzwBvTFmQOVTie4K1s9O5+fsfgmpl2Pe+Ac=
